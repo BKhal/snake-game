@@ -1,26 +1,14 @@
 import pygame
 pygame.init()
 
-# Causes segments in snake body to follow movement of leading segment
-def trail(tempHeadX, tempHeadY):
-    tempX = 0
-    tempY = 0
-    for snakeSegment in snake:
-        if snakeSegment == snakeHead:
-            continue
-        else:
-            tempX = snakeSegment.x
-            tempY = snakeSegment.y
-            snakeSegment.x = tempHeadX
-            snakeSegment.y = tempHeadY
-            tempHeadX = tempX
-            tempHeadY = tempY
-
-# Game properties
-gameSize = (700, 500)
+# Colour properties
 black = (0, 0, 0)
+white = (255, 255, 255)
 red = (255, 0, 0)
 green = (0, 255, 0)
+
+# Font properties
+gameFont = pygame.font.SysFont('Comic Sans MS', 30)
 
 # Snake default properties
 snakeColour = green
@@ -42,12 +30,27 @@ delay = 250
 move_event = pygame.USEREVENT + 1
 pygame.time.set_timer(move_event, delay)
 
-run = True
-
+# Game window properties
+gameSize = (700, 500)
 screen = pygame.display.set_mode(gameSize)
 pygame.display.set_caption("Snake")
 
+run = True
 
+# Causes segments in snake body to follow movement of leading segment
+def trail(tempHeadX, tempHeadY):
+    tempX = 0
+    tempY = 0
+    for snakeSegment in snake:
+        if snakeSegment == snakeHead:
+            continue
+        else:
+            tempX = snakeSegment.x
+            tempY = snakeSegment.y
+            snakeSegment.x = tempHeadX
+            snakeSegment.y = tempHeadY
+            tempHeadX = tempX
+            tempHeadY = tempY
 
 # Main game
 while run:
@@ -103,12 +106,36 @@ while run:
                 snakeHead.y -= speed
             trail(tempX,tempY)
 
-    screen.fill(black)
+    # Collision tests
+    if snakeHead.x < 0 or snakeHead.y < 0 or snakeHead.x == gameSize[0] or snakeHead.y == gameSize[1]:
+        run = False
+        over = True
 
-    # Rebuilding snake after movement
-    for snakeSegment in snake:
-        pygame.draw.rect(screen, black, snakeSegment)
-        pygame.draw.rect(screen, snakeColour, (snakeSegment.x + outlineWidth, snakeSegment.y + outlineWidth, snakeSegmentWidth - outlineWidth * 2, snakeSegmentWidth - outlineWidth * 2))
-    pygame.display.flip()
+        # Displays game over text
+        textsurface = gameFont.render("Press any key to play again", False, white)
+        screen.blit(textsurface,(gameSize[0]/2-textsurface.get_width()/2,gameSize[1]*0.6))
+        pygame.display.flip()
+        while over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    over = False
+                
+                # Resets default snake if a key is pressed
+                elif event.type == pygame.KEYDOWN:
+                    run = True 
+                    over = False
+                    snakeHead = pygame.Rect(snakeHeadX, snakeHeadY, snakeSegmentWidth, snakeSegmentWidth)
+                    snakeBody = snakeHead.copy()
+                    snakeBody.x -= snakeSegmentWidth
+                    snake = [snakeHead, snakeBody]
+                    direction = "right"
+   
+    if run:
+        screen.fill(black)
 
+        # Rebuilding snake after movement
+        for snakeSegment in snake:
+            pygame.draw.rect(screen, black, snakeSegment)
+            pygame.draw.rect(screen, snakeColour, (snakeSegment.x + outlineWidth, snakeSegment.y + outlineWidth, snakeSegmentWidth - outlineWidth * 2, snakeSegmentWidth - outlineWidth * 2))
+        pygame.display.flip()
 pygame.quit()
