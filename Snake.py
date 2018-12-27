@@ -1,4 +1,5 @@
 import pygame
+from random import randint
 pygame.init()
 
 # Colour properties
@@ -19,11 +20,19 @@ snakeHeadY = 300
 direction = "right"
 outlineWidth = 2
 
+# Snake food properties
+foodColour = red
+foodWidth = snakeSegmentWidth
+foodX = 500
+foodY = 300
+foodPellet = pygame.Rect(foodX, foodY, foodWidth, foodWidth)
+
 # Building snake
 snakeHead = pygame.Rect(snakeHeadX, snakeHeadY, snakeSegmentWidth, snakeSegmentWidth)
 snakeBody = snakeHead.copy()
 snakeBody.x -= snakeSegmentWidth
 snake = [snakeHead, snakeBody]
+snakeTail = [snakeBody]
 
 # Timer event properties
 delay = 250
@@ -37,10 +46,26 @@ pygame.display.set_caption("Snake")
 
 run = True
 
-# Causes segments in snake body to follow movement of leading segment
-def trail(tempHeadX, tempHeadY):
+# Handles snake growth and body trailing
+def growAndTrail(tempHeadX, tempHeadY):
     tempX = 0
     tempY = 0
+
+    # Increases snake size by adding one segment to end if food is eaten and changes location of food pellet
+    if snakeHead.colliderect(foodPellet):
+        newSegment = pygame.Rect(snakeTail[0].x, snakeTail[0].y, snakeSegmentWidth, snakeSegmentWidth)
+        snake.append(newSegment)
+        snakeTail.append(newSegment)
+
+        dropped = False
+        while not dropped:
+            dropped = True
+            foodPellet.x = randint(0, 13) * 50
+            foodPellet.y = randint(0,9) * 50
+            if foodPellet.collidelist(snake) != -1:
+                dropped = False
+
+    # Causes segments in snake body to follow movement of leading segment
     for snakeSegment in snake:
         if snakeSegment == snakeHead:
             continue
@@ -68,28 +93,28 @@ while run:
             if event.key == pygame.K_RIGHT and (direction == "up" or direction == "down"):
                 snakeHead.x += speed
                 direction = "right"
-                trail(tempX,tempY)
+                growAndTrail(tempX,tempY)
                 pygame.time.set_timer(move_event, delay)
             
             # Left key
             elif event.key == pygame.K_LEFT and (direction == "up" or direction == "down"):
                 snakeHead.x -= speed
                 direction = "left"
-                trail(tempX,tempY)
+                growAndTrail(tempX,tempY)
                 pygame.time.set_timer(move_event, delay)
             
             # Down key
             elif event.key == pygame.K_DOWN and (direction == "right" or direction == "left"):
                 snakeHead.y += speed
                 direction = "down"
-                trail(tempX,tempY)
+                growAndTrail(tempX,tempY)
                 pygame.time.set_timer(move_event, delay)
 
             # Up key
             elif event.key == pygame.K_UP and (direction == "right" or direction == "left"):
                 snakeHead.y -= speed
                 direction = "up"
-                trail(tempX,tempY)
+                growAndTrail(tempX,tempY)
                 pygame.time.set_timer(move_event, delay)
 
             pygame.event.clear()
@@ -104,10 +129,10 @@ while run:
                 snakeHead.y += speed
             elif direction == "up":
                 snakeHead.y -= speed
-            trail(tempX,tempY)
+            growAndTrail(tempX,tempY)
 
     # Collision tests
-    if snakeHead.x < 0 or snakeHead.y < 0 or snakeHead.x == gameSize[0] or snakeHead.y == gameSize[1]:
+    if snakeHead.x < 0 or snakeHead.y < 0 or snakeHead.x == gameSize[0] or snakeHead.y == gameSize[1] or snakeHead.collidelist(snakeTail) != -1:
         run = False
         over = True
 
@@ -128,8 +153,11 @@ while run:
                     snakeBody = snakeHead.copy()
                     snakeBody.x -= snakeSegmentWidth
                     snake = [snakeHead, snakeBody]
+                    snakeTail = [snakeBody]
                     direction = "right"
-   
+                    foodPellet.x = foodX
+                    foodPellet.y = foodY
+
     if run:
         screen.fill(black)
 
@@ -137,5 +165,6 @@ while run:
         for snakeSegment in snake:
             pygame.draw.rect(screen, black, snakeSegment)
             pygame.draw.rect(screen, snakeColour, (snakeSegment.x + outlineWidth, snakeSegment.y + outlineWidth, snakeSegmentWidth - outlineWidth * 2, snakeSegmentWidth - outlineWidth * 2))
+        pygame.draw.rect(screen, foodColour, foodPellet)    # Drawing food
         pygame.display.flip()
 pygame.quit()
